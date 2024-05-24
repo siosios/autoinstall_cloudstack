@@ -13,6 +13,8 @@
 
 * How to use
 
+ : **** comment out the section for webmin in the script if you have no use for it. ****
+
   Download this script into wherever you like on the server that CloudStack will be installed.
   When you run this script with '-h'(help) optoin, you will see available options for the script.
   : ./autoinstall_cloudstack.sh -h
@@ -31,10 +33,10 @@
        - '-ca': when you want to install only the agent for computing nodes
      The '-c'(common) option will set SELinux to permissive, firewall and network.
 
-     Installing CloudStack on single node, type command bellow:
+     Installing CloudStack on single node, type command below:
      : bash autoinstall_cloudstack.sh -cnamr
 
-     Installing CloudStack Agent on a node, type command bellow:
+     Installing just the CloudStack Agent on a node, type command below:
      : bash autoinstall_cloudstack.sh -car
 
 ** Tips
@@ -57,7 +59,6 @@
   :                                                     vnet6
   : virbr0      8000.52540079e395       yes             virbr0-nic
 
-  : comment out the section for webmin if you have no use for it.
 
 * Steps to install CloudStack on single server
   - Install CentOS 9.X from the minimal.iso.
