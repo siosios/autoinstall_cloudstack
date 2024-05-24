@@ -34,6 +34,9 @@
      Installing CloudStack on single node, type command bellow:
      : bash autoinstall_cloudstack.sh -cnamr
 
+     Installing CloudStack Agent on a node, type command bellow:
+     : bash autoinstall_cloudstack.sh -car
+
 ** Tips
   - You may need to install 'wget' or 'openssh-clients' package with yum command before downloading this script.
   - If you want to save time to input credentials to login by SSH, enter the ssh public key of your client machine to SSH_PUBLIC_KEY at the 3rd line of the script (optional).
