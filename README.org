@@ -59,7 +59,7 @@
   - Install CentOS 9.X from the minimal.iso.
   - Install and configure CloudStack
     : yum install wget -y
-    : wget https://shorturl.at/hAg5p
+    : wget https://raw.githubusercontent.com/siosios/install_cloudstack_auto/main/autoinstall_cloudstack.sh
     : bash autoinstall_cloudstack.sh -cnmar
   - Enter some informantion which is necessary for installation such as hostname and ip address.
   - The management server will be rebooted automatically. After rebooting,
