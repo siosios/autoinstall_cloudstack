@@ -90,14 +90,14 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     systemctl stop firewalld
     yum remove firewalld -y
 
-    #For testing purposes comment out if not using#
+#####Webmin section comment out if not using#####
     curl -o setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
     dnf install perl perl-App-cpanminus perl-devel -y
     sh setup-repos.sh
     dnf install webmin -y
 	systemctl start webmin
 	systemctl enable webmin
-    #######################
+#################################################
 }
 
 function install_management() {
