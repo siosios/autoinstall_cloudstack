@@ -144,7 +144,7 @@ binlog-format = 'ROW'" >> /etc/my.cnf
 }
 
 function install_agent() {
-    dnf install cloudstack-agent qemu-kvm libvirtd -y
+    dnf install cloudstack-agent qemu-kvm libvirt -y
 : > /etc/libvirt/libvirtd.conf
 : > /etc/libvirt/qemu.conf
 : > /etc/sysconfig/rpc-rquotad
@@ -157,7 +157,7 @@ auth_tcp = \"none\"
 mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     echo "vnc_listen=\"0.0.0.0\"" >> /etc/libvirt/qemu.conf
     
-    systemctl restart libvirtd
+    systemctl start libvirtd
 }
 
 function initialize_storage() {
@@ -238,7 +238,7 @@ outgoing-port=2020
 
     systemctl restart iptables
     service iptables save
-    systemctl restart NetworkManager
+   
 }
 
 if [ $# -eq 0 ]
