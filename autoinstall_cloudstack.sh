@@ -289,7 +289,6 @@ fi
 if [ "$opt_common" = "true" ]
 then
     add_ssh_public_key
-    get_network_info
     install_common
 fi
 if [ "$opt_management" = "true" ]
