@@ -291,18 +291,18 @@ then
     add_ssh_public_key
     install_common
 fi
-if [ "$opt_management" = "true" ]
+if [ "$opt_agent" = "true" ]
 then
-    install_management
-    initialize_storage
+    install_agent
 fi
 if [ "$opt_nfs" = "true" ]
 then
     install_nfs
 fi
-if [ "$opt_agent" = "true" ]
+if [ "$opt_management" = "true" ]
 then
-    install_agent
+    install_management
+    initialize_storage
 fi
 if [ "$opt_reboot" = "true" ]
 then
