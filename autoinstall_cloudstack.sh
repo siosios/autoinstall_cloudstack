@@ -144,7 +144,7 @@ binlog-format = 'ROW'" >> /etc/my.cnf
 }
 
 function install_agent() {
-    dnf install cloudstack-agent qemu-kvm libvirt -y
+    dnf install cloudstack-agent qemu-kvm -y
 : > /etc/libvirt/libvirtd.conf
 : > /etc/libvirt/qemu.conf
 : > /etc/sysconfig/rpc-rquotad
