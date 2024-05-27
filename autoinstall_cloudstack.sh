@@ -148,6 +148,11 @@ function install_agent() {
 : > /etc/libvirt/libvirtd.conf
 : > /etc/libvirt/qemu.conf
 : > /etc/sysconfig/rpc-rquotad
+: > /etc/sysconfig/libvirtd
+mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
+unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud-sock
+systemctl enable virtqemud
+systemctl start  virtqemud
 
     modprobe kvm-intel
     echo "listen_tls = 0
@@ -156,6 +161,8 @@ tcp_port = \"16509\"
 auth_tcp = \"none\"
 mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     echo "vnc_listen=\"0.0.0.0\"" >> /etc/libvirt/qemu.conf
+    echo "LIBVIRTD_ARGS=-l" >> /etc/sysconfig/libvirtd
+    echo "mode = \"legacy\"" >> /etc/libvirt/libvirt.conf
     
     systemctl start libvirtd
 }
