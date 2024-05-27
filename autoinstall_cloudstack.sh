@@ -66,7 +66,7 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     dnf install https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm -y
     /usr/bin/crb enable
     dnf install chrony wget net-tools curl nfs4-acl-tools nfs-utils -y
-    #dnf groupinstall 'Development Tools' -y
+    dnf groupinstall 'Development Tools' -y
     systemctl restart NetworkManager
     systemctl start chronyd
     systemctl enable chronyd
@@ -89,7 +89,7 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     
     systemctl stop firewalld
     yum remove firewalld -y
-
+    dnf install iptables iptables-utils iptables-services -y
 #####Webmin section comment out if not using#####
     curl -o setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
     dnf install perl perl-App-cpanminus perl-devel -y
@@ -144,7 +144,7 @@ binlog-format = 'ROW'" >> /etc/my.cnf
 }
 
 function install_agent() {
-    dnf install cloudstack-agent qemu-kvm -y
+    dnf install cloudstack-agent qemu-kvm libvirt -y
 : > /etc/libvirt/libvirtd.conf
 : > /etc/libvirt/qemu.conf
 : > /etc/sysconfig/rpc-rquotad
@@ -164,6 +164,7 @@ mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     echo "LIBVIRTD_ARGS=-l" >> /etc/sysconfig/libvirtd
     echo "mode = \"legacy\"" >> /etc/libvirt/libvirt.conf
     
+    systemctl enable libvirtd
     systemctl start libvirtd
 }
 
@@ -220,7 +221,6 @@ outgoing-port=2020
     systemctl start nfs-server
     systemctl enable nfs-server
     
-    dnf install iptables iptables-utils iptables-services -y
     
 iptables -A INPUT -s $NETWORK -m state --state NEW -p udp --dport 111 -j ACCEPT
 iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 111 -j ACCEPT
