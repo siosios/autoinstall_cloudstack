@@ -149,8 +149,8 @@ function install_agent() {
 : > /etc/libvirt/qemu.conf
 : > /etc/sysconfig/rpc-rquotad
 : > /etc/sysconfig/libvirtd
-mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
-unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud-sock
+systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
+systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud-sock
 systemctl enable virtqemud
 systemctl start  virtqemud
 
