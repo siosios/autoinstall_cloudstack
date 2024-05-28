@@ -105,6 +105,9 @@ dnf install cloudstack-management mysql-server perl-DBD-MySQL -y
     sleep 3
     systemctl stop mysqld
     
+    echo "PermitRootLogin yes
+    PasswordAuthentication yes
+PermitEmptyPasswords no" >> /etc/ssh/sshd_config
 
     echo "innodb_rollback_on_timeout=1
 innodb_lock_wait_timeout=600
