@@ -65,7 +65,7 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm -y
     dnf install https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm -y
     /usr/bin/crb enable
-    dnf install chrony wget net-tools curl nfs4-acl-tools nfs-utils firewalld -y
+    dnf install chrony wget net-tools curl nfs4-acl-tools nfs-utils -y
     dnf groupinstall 'Development Tools' -y
     systemctl restart NetworkManager
     systemctl start chronyd
@@ -105,16 +105,13 @@ dnf install cloudstack-management mysql-server perl-DBD-MySQL -y
     sleep 3
     systemctl stop mysqld
     
-    head -7 /etc/my.cnf > /tmp/before
-    tail -n +7 /etc/my.cnf > /tmp/after
-    cat /tmp/before > /etc/my.cnf
+
     echo "innodb_rollback_on_timeout=1
 innodb_lock_wait_timeout=600
 max_connections=350
 log-bin=mysql-bin
 binlog-format = 'ROW'" >> /etc/my.cnf
-    cat /tmp/after >> /etc/my.cnf
-    rm -rf /tmp/before /tmp/after
+
 
 	chown -R mysql:mysql /var/lib/mysql
     dnf install -y mysql-connector-python3
@@ -126,10 +123,8 @@ binlog-format = 'ROW'" >> /etc/my.cnf
     sleep 3
     pkill mysqld
     killall mysqld
-    sleep 3
     rm -rf /root/mysql-init
     chown -R mysql:mysql /var/lib/mysql
-    sleep 2
     systemctl start mysqld
     systemctl enable mysqld
     perl -MCPAN -e 'install DBI'
@@ -219,7 +214,6 @@ outgoing-port=2020
     systemctl start nfs-server
     systemctl enable nfs-server
     
-firewall-cmd --zone=public --add-port=111/udp --permanent
 firewall-cmd --zone=public --add-port=111/tcp --permanent
 firewall-cmd --zone=public --add-port=2049/tcp --permanent
 firewall-cmd --zone=public --add-port=32803/tcp --permanent
@@ -231,6 +225,14 @@ firewall-cmd --zone=public --add-port=875/udp --permanent
 firewall-cmd --zone=public --add-port=10000/tcp --permanent
 firewall-cmd --zone=public --add-port=8080/tcp --permanent
 firewall-cmd --zone=public --add-port=662/tcp --permanent
+firewall-cmd --zone=public --add-port=8080/tcp --permanent
+firewall-cmd --zone=public --add-port=8250/tcp --permanent
+firewall-cmd --zone=public --add-port=8443/tcp --permanent
+firewall-cmd --zone=public --add-port=9090/tcp --permanent
+firewall-cmd --zone=public --add-port=8080/udp --permanent
+firewall-cmd --zone=public --add-port=8250/udp --permanent
+firewall-cmd --zone=public --add-port=8443/udp --permanent
+firewall-cmd --zone=public --add-port=9090/udp --permanent
 firewall-cmd --zone=public --add-port=22/tcp --permanent
 firewall-cmd --zone=public --add-port=3306/tcp --permanent
 firewall-cmd --reload
