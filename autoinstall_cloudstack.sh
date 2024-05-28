@@ -85,35 +85,9 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     nmcli c delete $CON 
     nmcli c add type bridge-slave autoconnect yes con-name $CON ifname $CON master cloudbr0
     nmcli con up $CON
-    sleep 5
+    sleep 3
     
-    systemctl stop firewalld
-    yum remove firewalld -y
-    dnf install iptables iptables-utils iptables-services -y
-    INPUT_SECTION_LINE=`cat -n /etc/sysconfig/iptables | egrep -- '*filter' | head -1 | awk '{print $1}'`
 
-    head -`expr $INPUT_SECTION_LINE + 1` /etc/sysconfig/iptables > /tmp/before
-    tail -$INPUT_SECTION_LINE /etc/sysconfig/iptables > /tmp/after
-    cat /tmp/before > /etc/sysconfig/iptables
-    echo "-A INPUT -s $NETWORK -m state --state NEW -p udp --dport 111 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 111 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 2049 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 32803 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p udp --dport 32769 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 892 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p udp --dport 892 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 875 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p udp --dport 875 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 10000 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 8080 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 662 -j ACCEPT
--A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 22 -j ACCEPT
--A INPUT -p tcp --dport 3306 -j ACCEPT"
-    cat /tmp/after >> /etc/sysconfig/iptables
-    rm -rf /tmp/before /tmp/after
-
-    systemctl restart iptables
-    service iptables save
 #####Webmin section comment out if not using#####
     curl -o setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
     dnf install perl perl-App-cpanminus perl-devel -y
@@ -245,7 +219,22 @@ outgoing-port=2020
     systemctl start nfs-server
     systemctl enable nfs-server
     
-   
+firewall-cmd --zone=public --add-port=111/udp --permanent
+firewall-cmd --zone=public --add-port=111/tcp --permanent
+firewall-cmd --zone=public --add-port=2049/tcp --permanent
+firewall-cmd --zone=public --add-port=32803/tcp --permanent
+firewall-cmd --zone=public --add-port=32769/udp --permanent
+firewall-cmd --zone=public --add-port=892/tcp --permanent
+firewall-cmd --zone=public --add-port=892/udp --permanent
+firewall-cmd --zone=public --add-port=875/tcp --permanent
+firewall-cmd --zone=public --add-port=875/udp --permanent
+firewall-cmd --zone=public --add-port=10000/tcp --permanent
+firewall-cmd --zone=public --add-port=8080/tcp --permanent
+firewall-cmd --zone=public --add-port=662/tcp --permanent
+firewall-cmd --zone=public --add-port=22/tcp --permanent
+firewall-cmd --zone=public --add-port=3306/tcp --permanent
+firewall-cmd --reload
+
 }
 
 if [ $# -eq 0 ]
