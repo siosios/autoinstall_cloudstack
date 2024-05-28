@@ -65,7 +65,7 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm -y
     dnf install https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm -y
     /usr/bin/crb enable
-    dnf install chrony wget net-tools curl nfs4-acl-tools nfs-utils -y
+    dnf install chrony wget net-tools curl nfs4-acl-tools nfs-utils firewalld -y
     dnf groupinstall 'Development Tools' -y
     systemctl restart NetworkManager
     systemctl start chronyd
