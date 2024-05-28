@@ -221,23 +221,28 @@ outgoing-port=2020
     systemctl start nfs-server
     systemctl enable nfs-server
     
-    
-iptables -A INPUT -s $NETWORK -m state --state NEW -p udp --dport 111 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 111 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 2049 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 32803 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p udp --dport 32769 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 892 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p udp --dport 892 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 875 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p udp --dport 875 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 10000 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 8080 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 662 -j ACCEPT
-iptables -A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 22 -j ACCEPT
-iptables -A INPUT -p tcp --dport 3306 -j ACCEPT
+INPUT_SECTION_LINE=`cat -n /etc/sysconfig/iptables | egrep -- '*filter' | head -1 | awk '{print $1}'`
 
-    systemctl enable iptables
+    head -`expr $INPUT_SECTION_LINE + 1` /etc/sysconfig/iptables > /tmp/before
+    tail -$INPUT_SECTION_LINE /etc/sysconfig/iptables > /tmp/after
+    cat /tmp/before > /etc/sysconfig/iptables
+    echo "-A INPUT -s $NETWORK -m state --state NEW -p udp --dport 111 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 111 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 2049 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 32803 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p udp --dport 32769 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 892 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p udp --dport 892 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 875 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p udp --dport 875 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 10000 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 8080 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 662 -j ACCEPT
+-A INPUT -s $NETWORK -m state --state NEW -p tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp --dport 3306 -j ACCEPT"
+    cat /tmp/after >> /etc/sysconfig/iptables
+    rm -rf /tmp/before /tmp/after
+
     systemctl restart iptables
     service iptables save
    
