@@ -1,5 +1,6 @@
 *  Modified in 2024 for Centos 9 and EL 9 distro's (not tested on RHEL 8) 
 ** The original author was https://github.com/penguin2716/autoinstall_cloudstack
+: ****** COMMENT OUT THE WEBMIN SECTION IN THE SCRIPT IF YOU HAVE NO USE FOR IT. ******
 
 * What is this?
 
@@ -12,8 +13,6 @@
   with Management Servers, Computing Nodes and Storage Servers.
 
 * How to use
-
- : **** comment out the section for webmin in the script if you have no use for it. ****
 
   Download this script into wherever you like on the server that CloudStack will be installed.
   When you run this script with '-h'(help) optoin, you will see available options for the script.
