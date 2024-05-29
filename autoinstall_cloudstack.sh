@@ -151,9 +151,6 @@ function install_agent() {
 : > /etc/sysconfig/rpc-rquotad
 : > /etc/sysconfig/libvirtd
 systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
-systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
-systemctl enable virtqemud
-systemctl start virtqemud
 
     modprobe kvm-intel
     echo "listen_tls = 0
@@ -168,6 +165,9 @@ mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     
     systemctl enable libvirtd
     systemctl start libvirtd
+    systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
+    systemctl enable virtqemud
+    systemctl start virtqemud
     systemctl enable cloudstack-agent
     systemctl start cloudstack-agent
 }
