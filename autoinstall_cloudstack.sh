@@ -165,9 +165,11 @@ mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     echo "LIBVIRTD_ARGS=-l" >> /etc/sysconfig/libvirtd
     echo "mode = \"legacy\"" >> /etc/libvirt/libvirt.conf
     echo "guest.cpu.mode=host-passthrough" >> /etc/cloudstack/agent/agent.properties
-
+    
     systemctl enable libvirtd
     systemctl start libvirtd
+    systemctl enable cloudstack-agent
+    systemctl start cloudstack-agent
 }
 
 function initialize_storage() {
