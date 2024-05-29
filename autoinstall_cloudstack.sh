@@ -85,6 +85,11 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     nmcli c delete $CON 
     nmcli c add type bridge-slave autoconnect yes con-name $CON ifname $CON master cloudbr0
     nmcli con up $CON
+    nmcli c delete cloudbr1
+    nmcli c add type bridge ifname cloudbr1 autoconnect yes con-name cloudbr1 stp on ipv6.method disabled
+    nmcli c delete $CON.200
+    nmcli c add type bridge-slave autoconnect yes con-name $CON.200 ifname $CON.200 master cloudbr1
+    nmcli con up $CON.200
     sleep 3
     
 
@@ -159,6 +164,7 @@ mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     echo "vnc_listen=\"0.0.0.0\"" >> /etc/libvirt/qemu.conf
     echo "LIBVIRTD_ARGS=-l" >> /etc/sysconfig/libvirtd
     echo "mode = \"legacy\"" >> /etc/libvirt/libvirt.conf
+    echo "guest.cpu.mode=host-passthrough" >> /etc/cloudstack/agent/agent.properties
 
     systemctl enable libvirtd
     systemctl start libvirtd
@@ -238,6 +244,10 @@ firewall-cmd --zone=public --add-port=8443/udp --permanent
 firewall-cmd --zone=public --add-port=9090/udp --permanent
 firewall-cmd --zone=public --add-port=22/tcp --permanent
 firewall-cmd --zone=public --add-port=3306/tcp --permanent
+firewall-cmd --zone=public --add-port=1798/tcp --permanent
+firewall-cmd --zone=public --add-port=16514/tcp --permanent
+firewall-cmd --zone=public --add-port=5900-6100/tcp --permanent
+firewall-cmd --zone=public --add-port=49152-49216/tcp --permanent
 firewall-cmd --reload
 
 }
