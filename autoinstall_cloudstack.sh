@@ -188,6 +188,7 @@ echo "#!/bin/bash
     systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
     systemctl enable virtqemud
     systemctl start virtqemud" >> /etc/local/runonce.d/virtqemud.sh
+    chmod +x /etc/local/runonce.d/virtqemud.sh
 
     systemctl enable cloudstack-agent
     systemctl start cloudstack-agent
