@@ -1,4 +1,4 @@
-*  Modified in 2024 for Centos 9 and EL 9 distro's (not tested on RHEL 8) 
+*  Modified in 2024 for RHEL 9 distro's (not modified and tested on RHEL 8) 
 ** The original author was https://github.com/penguin2716/autoinstall_cloudstack
 : ****** COMMENT OUT THE WEBMIN SECTION IN THE SCRIPT IF YOU HAVE NO USE FOR IT. ******
 
