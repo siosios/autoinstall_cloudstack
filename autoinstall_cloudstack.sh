@@ -150,7 +150,7 @@ function install_agent() {
 : > /etc/libvirt/qemu.conf
 : > /etc/sysconfig/rpc-rquotad
 : > /etc/sysconfig/libvirtd
-systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
+
 
     modprobe kvm-intel
     echo "listen_tls = 0
@@ -165,9 +165,30 @@ mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     
     systemctl enable libvirtd
     systemctl start libvirtd
+    #systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
+    #systemctl enable virtqemud
+    #systemctl start virtqemud
+
+mkdir -p /etc/local/runonce.d/ran
+echo "#!/bin/sh
+for file in /etc/local/runonce.d/*
+do
+    if [ ! -f "$file" ]
+    then
+        continue
+    fi
+    "$file"
+    mv "$file" "/etc/local/runonce.d/ran/$file.$(date +%Y%m%dT%H%M%S)"
+    logger -t runonce -p local3.info "$file"
+done" >> /usr/local/bin/runonce
+chmod +x /usr/local/bin/runonce
+echo '@reboot /usr/local/bin/runonce' >> /etc/crontab
+echo "#!/bin/bash
+    systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
     systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
     systemctl enable virtqemud
-    systemctl start virtqemud
+    systemctl start virtqemud" >> /etc/local/runonce.d/virtqemud.sh
+
     systemctl enable cloudstack-agent
     systemctl start cloudstack-agent
 }
