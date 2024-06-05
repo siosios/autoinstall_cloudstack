@@ -140,7 +140,7 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
 warn "Installing Webmin... Comment this section out in the script if you dont want it"
     curl -o setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
     dnf install perl perl-App-cpanminus perl-devel -y
-    sh setup-repos.sh
+    sh setup-repos.sh -f
     dnf install webmin -y
 	systemctl start webmin
 	systemctl enable webmin
@@ -216,24 +216,26 @@ mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     #systemctl start virtqemud
 
 mkdir -p /etc/local/runonce.d/ran
-echo "#!/bin/sh
+echo '#!/bin/sh
 for file in /etc/local/runonce.d/*
 do
-    if [ ! -f \"$file\" ]
+    if [ ! -f "$file" ]
     then
         continue
     fi
-    \"$file\"
-    mv \"$file\" "/etc/local/runonce.d/ran/$file.$(date +%Y%m%dT%H%M%S)"
+
+    "$file"
+    file=$(basename $file)
+    mv "/etc/local/runonce.d/$file" "/etc/local/runonce.d/ran/$file.$(date +%Y%m%dT%H%M%S)"
     logger -t runonce -p local3.info "$file"
-done" >> /usr/local/bin/runonce
+done' >> /usr/local/bin/runonce
 chmod +x /usr/local/bin/runonce
 echo '@reboot /usr/local/bin/runonce' >> /etc/crontab
-echo "#!/bin/bash
+echo '#!/bin/bash
     systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
     systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
     systemctl enable virtqemud
-    systemctl start virtqemud" >> /etc/local/runonce.d/virtqemud.sh
+    systemctl start virtqemud' >> /etc/local/runonce.d/virtqemud.sh
     chmod +x /etc/local/runonce.d/virtqemud.sh
 
     systemctl enable cloudstack-agent
