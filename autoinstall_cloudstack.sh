@@ -169,7 +169,7 @@ binlog-format = 'ROW'" >> /etc/my.cnf
 	chown -R mysql:mysql /var/lib/mysql
     dnf install -y mysql-connector-python3
 
-	echo $MYPASS
+	info "Mysql Password is $MYPASS"
 	echo "ALTER USER 'root'@'localhost' IDENTIFIED BY "$MYPASS";" >| /root/mysql-init
 	sed -i -e "s/IDENTIFIED BY $MYPASS;.*/IDENTIFIED BY '$MYPASS';/" /root/mysql-init
     mysqld --user=root --init-file=/root/mysql-init &
