@@ -10,8 +10,8 @@ BL=$(tput blink)
 b=$(tput bold)
 N=$(tput sgr0)
 
-set -e
-set -o noglob
+#set -e
+#set -o noglob
 
 # --- helper functions for logs ---
 info()
@@ -63,12 +63,12 @@ sleep 3
 info "\n**** Current Network Connections****\n"
 nmcli con show
     sleep 5
-    
+
 function get_network_info() {
     echo -e "\n${B}${b}* CS version\n${N}"
-    read -p ' Cloudstack version (ex:4.19) : ' VER 
+    read -p ' Cloudstack version (ex:4.19) : ' VER
     echo -e "\n${B}${b}* password for mysql\n${N}"
-    read -p ' mysql password               : ' MYPASS   
+    read -p ' mysql password               : ' MYPASS
     echo -e "\n${B}${b}* settings for cloud agent\n${N}"
     read -p ' hostname   (ex:cloudstack)   : ' HOSTNAME
     read -p ' IP address   (ex:192.168.1.2): ' IPADDR
@@ -77,7 +77,7 @@ function get_network_info() {
     read -p ' dns1       (ex:192.168.1.1)  : ' DNS1
     read -p ' dns2       (ex:8.8.4.4)      : ' DNS2
     read -p ' net adapter (ex:eno1 or eth0) : ' CON
-}   
+}
 
 function get_nfs_info() {
     echo -e "\n${B}${b}* settings for nfs server\n${N}"
@@ -102,7 +102,7 @@ baseurl=http://download.cloudstack.org/centos/9/$VER/
 enabled=1
 gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
 
-    
+
     rpm -i https://dev.mysql.com/get/mysql84-community-release-el9-1.noarch.rpm
     rpm -i https://kojipkgs.fedoraproject.org/packages/bridge-utils/1.7.1/3.el9/x86_64/bridge-utils-1.7.1-3.el9.x86_64.rpm
     dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm -y
@@ -122,10 +122,10 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
 	rm ./temp_hosts
     echo "$HOSTNAME" > /etc/hostname
     echo "Domain = $HOSTNAME" > /etc/idmapd.conf
-    
-    nmcli c delete cloudbr0 
+
+    nmcli c delete cloudbr0
     nmcli c add type bridge ifname cloudbr0 autoconnect yes con-name cloudbr0 stp on ipv4.addresses $CIDR ipv4.method manual ipv4.gateway $GATEWAY ipv4.dns $DNS1 +ipv4.dns $DNS2 ipv6.method disabled
-    nmcli c delete $CON 
+    nmcli c delete $CON
     nmcli c add type bridge-slave autoconnect yes con-name $CON ifname $CON master cloudbr0
     nmcli con up $CON
     nmcli c delete cloudbr1
@@ -134,10 +134,10 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     nmcli c add type bridge-slave autoconnect yes con-name $CON.200 ifname $CON.200 master cloudbr1
     nmcli con up $CON.200
     sleep 3
-    
+
 
 #####Webmin section comment out if not using#####
-warn "Installing Webmin, Comment this section out in the script if you dont want it"
+warn "Installing Webmin... Comment this section out in the script if you dont want it"
     curl -o setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
     dnf install perl perl-App-cpanminus perl-devel -y
     sh setup-repos.sh
@@ -154,7 +154,7 @@ dnf install cloudstack-management mysql-server perl-DBD-MySQL -y
     systemctl start mysqld
     sleep 3
     systemctl stop mysqld
-    
+
     echo "PermitRootLogin yes
     PasswordAuthentication yes
 PermitEmptyPasswords no" >> /etc/ssh/sshd_config
@@ -168,7 +168,7 @@ binlog-format = 'ROW'" >> /etc/my.cnf
 
 	chown -R mysql:mysql /var/lib/mysql
     dnf install -y mysql-connector-python3
-    	
+
 	echo $MYPASS
 	echo "ALTER USER 'root'@'localhost' IDENTIFIED BY "$MYPASS";" >| /root/mysql-init
 	sed -i -e "s/IDENTIFIED BY $MYPASS;.*/IDENTIFIED BY '$MYPASS';/" /root/mysql-init
@@ -208,7 +208,7 @@ mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     echo "LIBVIRTD_ARGS=-l" >> /etc/sysconfig/libvirtd
     echo "mode = \"legacy\"" >> /etc/libvirt/libvirt.conf
     echo "guest.cpu.mode=host-passthrough" >> /etc/cloudstack/agent/agent.properties
-    
+
     systemctl enable libvirtd
     systemctl start libvirtd
     #systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
@@ -219,12 +219,12 @@ mkdir -p /etc/local/runonce.d/ran
 echo "#!/bin/sh
 for file in /etc/local/runonce.d/*
 do
-    if [ ! -f "$file" ]
+    if [ ! -f \"$file\" ]
     then
         continue
     fi
-    "$file"
-    mv "$file" "/etc/local/runonce.d/ran/$file.$(date +%Y%m%dT%H%M%S)"
+    \"$file\"
+    mv \"$file\" "/etc/local/runonce.d/ran/$file.$(date +%Y%m%dT%H%M%S)"
     logger -t runonce -p local3.info "$file"
 done" >> /usr/local/bin/runonce
 chmod +x /usr/local/bin/runonce
@@ -273,7 +273,7 @@ info "Setting up the storage server"
 }
 
 function install_nfs() {
-info "Installing NFS parameters and firewall permissions" 
+info "Installing NFS parameters and firewall permissions"
 
 : > /etc/nfs.conf
     echo "[general]
