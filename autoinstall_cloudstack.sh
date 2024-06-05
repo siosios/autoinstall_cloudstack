@@ -211,9 +211,8 @@ mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
 
     systemctl enable libvirtd
     systemctl start libvirtd
-    #systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
-    #systemctl enable virtqemud
-    #systemctl start virtqemud
+    systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
+
 
 mkdir -p /etc/local/runonce.d/ran
 echo '#!/bin/sh
@@ -230,14 +229,27 @@ do
     logger -t runonce -p local3.info "$file"
 done' >> /usr/local/bin/runonce
 chmod +x /usr/local/bin/runonce
-echo '@reboot /usr/local/bin/runonce' >> /etc/crontab
+
 echo '#!/bin/bash
-    systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
     systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
     systemctl enable virtqemud
     systemctl start virtqemud
-    systemctl restart libvirtd' >> /etc/local/runonce.d/virtqemud.sh
+    systemctl restart libvirtd
+    systemctl restart cloudstack-agent' >> /etc/local/runonce.d/virtqemud.sh
     chmod +x /etc/local/runonce.d/virtqemud.sh
+    
+    echo '[Unit]
+Description=run bash scripts at Startup
+After=mysql.service
+
+[Service]
+ExecStart=/usr/local/bin/runonce
+
+[Install]
+WantedBy=default.target' >> /etc/systemd/system/runonce.service
+    chmod 664 /etc/systemd/system/runonce.service
+    systemctl daemon-reload
+    systemctl enable runonce
 
     systemctl enable cloudstack-agent
     systemctl start cloudstack-agent
