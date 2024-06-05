@@ -235,7 +235,8 @@ echo '#!/bin/bash
     systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
     systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
     systemctl enable virtqemud
-    systemctl start virtqemud' >> /etc/local/runonce.d/virtqemud.sh
+    systemctl start virtqemud
+    systemctl restart libvirtd' >> /etc/local/runonce.d/virtqemud.sh
     chmod +x /etc/local/runonce.d/virtqemud.sh
 
     systemctl enable cloudstack-agent
