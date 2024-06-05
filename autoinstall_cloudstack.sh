@@ -4,8 +4,42 @@
 COLUMNS="$(tput cols)"
 R=$(tput setaf 1)
 B=$(tput setaf 6)
+Y=$(tput setaf 3)
+G=$(tput setaf 2)
+BL=$(tput blink)
 b=$(tput bold)
 N=$(tput sgr0)
+
+set -e
+set -o noglob
+
+# --- helper functions for logs ---
+info()
+{
+G=$(tput setaf 2)
+b=$(tput bold)
+N=$(tput sgr0)
+B=$(tput setaf 6)
+    echo -e "${b}${G}[INFO] ${N}" "${b}${B}$@${N}"
+}
+warn()
+{
+Y=$(tput setaf 3)
+b=$(tput bold)
+N=$(tput sgr0)
+B=$(tput setaf 6)
+    echo -e "${b}${Y}[WARN] ${N}" "${b}${B}$@${N}" >&2
+    sleep5
+}
+fatal()
+{
+R=$(tput setaf 1)
+b=$(tput bold)
+N=$(tput sgr0)
+B=$(tput setaf 6)
+    echo -e "${b}${R}[ERROR] " "${b}${B}$@${N}" >&2
+    exit 1
+}
 
 SSH_PUBLIC_KEY='insert_your_ssh_public_key_here'
 
@@ -16,23 +50,26 @@ function add_ssh_public_key() {
     echo -e "$SSH_PUBLIC_KEY" >> .ssh/authorized_keys
     chmod 600 .ssh/authorized_keys
 }
-echo "
-╔══════════════════════════════════════════════════════════╗
-║+-++-++-++-++-++-++-++-++-++-+ +-++-++-++-++-++-++-++-++-+║
-║|C||l||o||u||d||S||t||a||c||k| |I||n||s||t||a||l||l||e||r|║
-║+-++-++-++-++-++-++-++-++-++-+ +-++-++-++-++-++-++-++-++-+║
-╚══════════════════════════════════════════════════════════╝
-"
-echo -e "\n${N}${B}${b}* Current Network Connections\n${N}${B}${b}"
+echo "${BL}${B}
+									╔══════════════════════════════════════════════════════════╗
+									║+-++-++-++-++-++-++-++-++-++-+ +-++-++-++-++-++-++-++-++-+║
+									║|C||l||o||u||d||S||t||a||c||k| |I||n||s||t||a||l||l||e||r|║
+									║+-++-++-++-++-++-++-++-++-++-+ +-++-++-++-++-++-++-++-++-+║
+									╚══════════════════════════════════════════════════════════╝
+	 								processing.................
+${N}"
+sleep 3
+
+info "\n**** Current Network Connections****\n"
 nmcli con show
     sleep 5
     
 function get_network_info() {
-    echo  -e "\n${N}${B}${b}* CS version\n${N}${B}${b}"
+    echo -e "\n${B}${b}* CS version\n${N}"
     read -p ' Cloudstack version (ex:4.19) : ' VER 
-    echo  -e "\n${N}${B}${b}* password for mysql\n${N}${B}${b}"
+    echo -e "\n${B}${b}* password for mysql\n${N}"
     read -p ' mysql password               : ' MYPASS   
-    echo  -e "\n${N}${B}${b}* settings for cloud agent\n${N}${B}${b}"
+    echo -e "\n${B}${b}* settings for cloud agent\n${N}"
     read -p ' hostname   (ex:cloudstack)   : ' HOSTNAME
     read -p ' IP address   (ex:192.168.1.2): ' IPADDR
     CIDR="$IPADDR/24"
@@ -43,20 +80,20 @@ function get_network_info() {
 }   
 
 function get_nfs_info() {
-    echo  -e "\n${N}${B}${b}* settings for nfs server\n${N}${B}${b}"
+    echo -e "\n${B}${b}* settings for nfs server\n${N}"
     read -p ' NFS Server IP: ' NFS_SERVER_IP
     read -p ' Primary mount point   (ex:/export/primary)  : ' NFS_SERVER_PRIMARY
     read -p ' Secondary mount point (ex:/export/secondary): ' NFS_SERVER_SECONDARY
 }
 
 function get_nfs_network() {
-    echo  -e "\n${N}${B}${b}* settings for nfs server\n${N}${B}${b}"
+    echo -e "\n${B}${b}* settings for nfs server\n${N}"
     read -p ' accept access from (ex:192.168.1.0/24): ' NETWORK
 }
 
 function install_common() {
+info "Installing common tools"
     yum update -y && yum upgrade -y
-    
     sed -i -e 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config
     setenforce permissive
     echo "[cloudstack-$VER]
@@ -100,6 +137,7 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     
 
 #####Webmin section comment out if not using#####
+warn "Installing Webmin, Comment this section out in the script if you dont want it"
     curl -o setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
     dnf install perl perl-App-cpanminus perl-devel -y
     sh setup-repos.sh
@@ -110,6 +148,7 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
 }
 
 function install_management() {
+info "Installing cloudstack management"
 dnf install cloudstack-management mysql-server perl-DBD-MySQL -y
 #initialize the DB
     systemctl start mysqld
@@ -151,6 +190,7 @@ binlog-format = 'ROW'" >> /etc/my.cnf
 }
 
 function install_agent() {
+info "Installing the cloudstack agent"
     dnf install cloudstack-agent qemu-kvm libvirt -y
 : > /etc/libvirt/libvirtd.conf
 : > /etc/libvirt/qemu.conf
@@ -201,6 +241,7 @@ echo "#!/bin/bash
 }
 
 function initialize_storage() {
+info "Setting up the storage server"
     dnf install quota-rpc rpcbind -y
     echo "RPCRQUOTADOPTS=\"-p 875\"" >> /etc/sysconfig/rpc-rquotad
     systemctl start rpcbind
@@ -232,6 +273,7 @@ function initialize_storage() {
 }
 
 function install_nfs() {
+info "Installing NFS parameters and firewall permissions" 
 
 : > /etc/nfs.conf
     echo "[general]
