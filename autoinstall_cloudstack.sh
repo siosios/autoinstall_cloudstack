@@ -104,7 +104,7 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
 
 
     rpm -i https://dev.mysql.com/get/mysql84-community-release-el9-1.noarch.rpm
-    rpm -i https://kojipkgs.fedoraproject.org/packages/bridge-utils/1.7.1/3.el9/x86_64/bridge-utils-1.7.1-3.el9.x86_64.rpm
+    rpm -i https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/Packages/b/bridge-utils-1.7.1-3.el9.x86_64.rpm
     dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm -y
     dnf install https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm -y
     /usr/bin/crb enable
@@ -135,11 +135,10 @@ gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
     nmcli con up $CON.200
     sleep 3
 
-
 #####Webmin section comment out if not using#####
 warn "Installing Webmin... Comment this section out in the script if you dont want it"
     curl -o setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
-    dnf install perl perl-App-cpanminus perl-devel -y
+    dnf install perl perl-App-cpanminus perl-devel perl-DBD-MySQL -y
     sh setup-repos.sh -f
     dnf install webmin -y
 	systemctl start webmin
@@ -149,7 +148,7 @@ warn "Installing Webmin... Comment this section out in the script if you dont wa
 
 function install_management() {
 info "Installing cloudstack management"
-dnf install cloudstack-management mysql-server perl-DBD-MySQL -y
+dnf install cloudstack-management mysql-server mysql-connector-python3 -y
 #initialize the DB
     systemctl start mysqld
     sleep 3
@@ -165,10 +164,6 @@ max_connections=350
 log-bin=mysql-bin
 binlog-format = 'ROW'" >> /etc/my.cnf
 
-
-	chown -R mysql:mysql /var/lib/mysql
-    dnf install -y mysql-connector-python3
-
 	info "Mysql Password is $MYPASS"
 	echo "ALTER USER 'root'@'localhost' IDENTIFIED BY "$MYPASS";" >| /root/mysql-init
 	sed -i -e "s/IDENTIFIED BY $MYPASS;.*/IDENTIFIED BY '$MYPASS';/" /root/mysql-init
@@ -180,8 +175,6 @@ binlog-format = 'ROW'" >> /etc/my.cnf
     chown -R mysql:mysql /var/lib/mysql
     systemctl start mysqld
     systemctl enable mysqld
-    perl -MCPAN -e 'install DBI'
-    perl -MCPAN -e 'install DBD::mysql'
 
     cloudstack-setup-databases cloud:$MYPASS@localhost --deploy-as=root:$MYPASS
     echo "Defaults:cloud !requiretty" >> /etc/sudoers
@@ -197,7 +190,6 @@ info "Installing the cloudstack agent"
 : > /etc/sysconfig/rpc-rquotad
 : > /etc/sysconfig/libvirtd
 
-
     modprobe kvm-intel
     echo "listen_tls = 0
 listen_tcp = 1
@@ -205,52 +197,15 @@ tcp_port = \"16509\"
 auth_tcp = \"none\"
 mdns_adv = 0" >> /etc/libvirt/libvirtd.conf
     echo "vnc_listen=\"0.0.0.0\"" >> /etc/libvirt/qemu.conf
-    echo "LIBVIRTD_ARGS=-l" >> /etc/sysconfig/libvirtd
+    echo "#LIBVIRTD_ARGS=-l" >> /etc/sysconfig/libvirtd
     echo "mode = \"legacy\"" >> /etc/libvirt/libvirt.conf
     echo "guest.cpu.mode=host-passthrough" >> /etc/cloudstack/agent/agent.properties
 
     systemctl enable libvirtd
     systemctl start libvirtd
-    systemctl mask libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket libvirtd-tls.socket libvirtd-tcp.socket
-
-
-mkdir -p /etc/local/runonce.d/ran
-echo '#!/bin/sh
-for file in /etc/local/runonce.d/*
-do
-    if [ ! -f "$file" ]
-    then
-        continue
-    fi
-
-    "$file"
-    file=$(basename $file)
-    mv "/etc/local/runonce.d/$file" "/etc/local/runonce.d/ran/$file.$(date +%Y%m%dT%H%M%S)"
-    logger -t runonce -p local3.info "$file"
-done' >> /usr/local/bin/runonce
-chmod +x /usr/local/bin/runonce
-
-echo '#!/bin/bash
     systemctl unmask virtqemud.socket virtqemud-ro.socket virtqemud-admin.socket virtqemud
     systemctl enable virtqemud
     systemctl start virtqemud
-    systemctl restart libvirtd
-    systemctl restart cloudstack-agent' >> /etc/local/runonce.d/virtqemud.sh
-    chmod +x /etc/local/runonce.d/virtqemud.sh
-    
-    echo '[Unit]
-Description=run bash scripts at Startup
-After=mysql.service
-
-[Service]
-ExecStart=/usr/local/bin/runonce
-
-[Install]
-WantedBy=default.target' >> /etc/systemd/system/runonce.service
-    chmod 664 /etc/systemd/system/runonce.service
-    systemctl daemon-reload
-    systemctl enable runonce
-
     systemctl enable cloudstack-agent
     systemctl start cloudstack-agent
 }
