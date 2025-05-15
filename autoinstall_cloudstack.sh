@@ -67,7 +67,7 @@ nmcli con show
 function get_network_info() {
     echo -e "\n${B}${b}* CS version\n${N}"
     read -p ' Cloudstack full version (ex:4.20.1) : ' VER
-	read -p ' Cloudstack short version (ex:4.20) : ' VERs
+    read -p ' Cloudstack short version (ex:4.20) : ' VERs
     echo -e "\n${B}${b}* password for mysql\n${N}"
     read -p ' mysql password               : ' MYPASS
     echo -e "\n${B}${b}* settings for cloud agent\n${N}"
