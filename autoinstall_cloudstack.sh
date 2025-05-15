@@ -66,7 +66,8 @@ nmcli con show
 
 function get_network_info() {
     echo -e "\n${B}${b}* CS version\n${N}"
-    read -p ' Cloudstack version (ex:4.19) : ' VER
+    read -p ' Cloudstack full version (ex:4.20.1) : ' VER
+	read -p ' Cloudstack short version (ex:4.20) : ' VERs
     echo -e "\n${B}${b}* password for mysql\n${N}"
     read -p ' mysql password               : ' MYPASS
     echo -e "\n${B}${b}* settings for cloud agent\n${N}"
@@ -234,11 +235,11 @@ info "Setting up the storage server"
     sleep 10
     rm -rf /mnt/primary/*
     rm -rf /mnt/primary/*
-    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VER/systemvmtemplate-$VER.0-hyperv.vhd.zip -h hyperv -F
-    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VER/systemvmtemplate-$VER.0-xen.vhd.bz2 -h xenserver -F
-    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VER/systemvmtemplate-$VER.0-vmware.ova -h vmware -F
-    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VER/systemvmtemplate-$VER.0-kvm.qcow2.bz2 -h kvm -F
-    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VER/systemvmtemplate-$VER.0-ovm.raw.bz2 -h ovm3 -F
+    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VERs/systemvmtemplate-$VER-x86_64-hyperv.vhd.zip -h hyperv -F
+    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VERs/systemvmtemplate-$VER-x86_64-xen.vhd.bz2 -h xenserver -F
+    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VERs/systemvmtemplate-$VER-x86_64-vmware.ova -h vmware -F
+    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VERs/systemvmtemplate-$VER-x86_64-kvm.qcow2.bz2 -h kvm -F
+    /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m $NFS_SERVER_SECONDARY -u http://download.cloudstack.org/systemvm/$VERs/systemvmtemplate-$VER-x86_64-ovm.raw.bz2 -h ovm3 -F
     sync
 }
 
