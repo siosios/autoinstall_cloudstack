@@ -97,9 +97,9 @@ info "Installing common tools"
     yum update -y && yum upgrade -y
     sed -i -e 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config
     setenforce permissive
-    echo "[cloudstack-$VER]
+    echo "[cloudstack-$VERs]
 name=cloudstack
-baseurl=http://download.cloudstack.org/centos/9/$VER/
+baseurl=http://download.cloudstack.org/centos/9/$VERs/
 enabled=1
 gpgcheck=0" > /etc/yum.repos.d/CloudStack.repo
 
