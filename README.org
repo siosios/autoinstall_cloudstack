@@ -1,4 +1,4 @@
-*  Modified in 2025 for RHEL 9 distro's (not for use on RHEL 8) 
+*  Modified in 2025 for RHEL 9 distro's (not for use on RHEL 8 or RHEL 10 <--yet) 
 ** The original author was https://github.com/penguin2716/autoinstall_cloudstack
 : ****** THE WEBMIN INSTALL IS NOW AN OPTION IN THE SCRIPT DONT SELECT IT IF YOU HAVE NO USE FOR IT. ******
 
@@ -41,7 +41,7 @@
      : bash autoinstall_cloudstack.sh -car
 
      Uninstalling cloudstack is still a work in progress but does a decent job of removing almost everything. During uninstall it will attempt to put the network as it was when installed...
-     ********* THIS PART IS NOT PERFECTED YET SO MAKE SURE TO HAVE REMOTE ACCESS TO THE BOX OTHER THEN SSH ********
+     : ********* THIS PART IS NOT PERFECTED YET SO MAKE SURE TO HAVE REMOTE ACCESS TO THE BOX OTHER THEN SSH ********
      : bash autoinstall_cloudstack.sh -U
 
 ** Tips
