@@ -53,17 +53,23 @@
 
   This script sets up network bridges as:
   : # brctl show
-  : bridge name bridge id               STP enabled     interfaces
-  : cloud0      8000.fe00a9fe0074       no              vnet0
-  :                                                     vnet3
-  : cloudbr0    8000.80ee733704b5       no              eth0
-  :                                                     vnet1
-  :                                                     vnet2
-  :                                                     vnet4
-  :                                                     vnet5
-  :                                                     vnet6
-  : virbr0      8000.52540079e395       yes             virbr0-nic
-
+  : bridge name     bridge id          STP enabled      interfaces
+  : breno1-248    8000.c81f66e027dd       no            eno1.248
+  :                                                        vnet14
+  :                                                        vnet16
+  : breno1-500    8000.c81f66e027dd       no            eno1.500
+  :                                                        vnet26
+  : cloud0        8000.fe00a9fe0e84       no            vnet0
+  :                                                        vnet12
+  :                                                        vnet27
+  :                                                        vnet3
+  : cloudbr0      8000.c81f66e027dd       yes           eno1
+  :                                                        vnet1
+  :                                                        vnet13
+  :                                                        vnet2
+  :                                                        vnet4
+  :                                                        vnet5
+  : cloudbr1      8000.000000000000       yes
 
 * Steps to install CloudStack on single server
   - Install CentOS 9.X from the minimal.iso.
