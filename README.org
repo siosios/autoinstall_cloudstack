@@ -1,6 +1,6 @@
-*  Modified in 2024 for RHEL 9 distro's (not modified and tested on RHEL 8) 
+*  Modified in 2025 for RHEL 9 distro's (not for use on RHEL 8) 
 ** The original author was https://github.com/penguin2716/autoinstall_cloudstack
-: ****** COMMENT OUT THE WEBMIN SECTION IN THE SCRIPT IF YOU HAVE NO USE FOR IT. ******
+: ****** THE WEBMIN INSTALL IS NOW AN OPTION IN THE SCRIPT DONT SELECT IT IF YOU HAVE NO USE FOR IT. ******
 
 * What is this?
 
@@ -25,7 +25,9 @@
      | -a     | install the agent for computing nodes |
      | -m     | install the Management Server         |
      | -h     | show help                             |
+     | -w     | install Webmin                        |
      | -r     | reboot after the installation         |
+     | -u     | Uninstall CloudStack                  |
      Usage:
        - '-cm': when you want to install only the management server
        - '-cn': when you want to install only the NFS server
@@ -33,10 +35,14 @@
      The '-c'(common) option will set SELinux to permissive, firewall and network.
 
      Installing CloudStack on single node, type command below:
-     : bash autoinstall_cloudstack.sh -cnamr
+     : bash autoinstall_cloudstack.sh -acnmwr
 
      Installing just the CloudStack Agent on a node, type command below:
      : bash autoinstall_cloudstack.sh -car
+
+     Uninstalling cloudstack is still a work in progress but does a decent job of removing almost everything. During uninstall it will attempt to put the network as it was when installed...
+     ********* THIS PART IS NOT PERFECTED YET SO MAKE SURE TO HAVE REMOTE ACCESS TO THE BOX OTHER THEN SSH ********
+     : bash autoinstall_cloudstack.sh -U
 
 ** Tips
   - You may need to install 'wget' or 'openssh-clients' package with yum command before downloading this script.
@@ -64,7 +70,7 @@
   - Install and configure CloudStack
     : yum install wget -y
     : wget https://raw.githubusercontent.com/siosios/autoinstall_cloudstack/main/autoinstall_cloudstack.sh
-    : bash autoinstall_cloudstack.sh -cnmar
+    : bash autoinstall_cloudstack.sh -acnmwr
   - Enter some informantion which is necessary for installation such as hostname and ip address.
   - The management server will be rebooted automatically. After rebooting,
     access "http://YOUR-MANAGEMENT-SERVER-IP:8080/client" by using web browser on a client machine.
