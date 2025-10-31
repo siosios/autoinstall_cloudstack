@@ -1067,7 +1067,8 @@ EOF
             add_rollback_action "mv /etc/my.cnf.installer-backup /etc/my.cnf; systemctl restart mysqld"
         fi
         cat >>/etc/my.cnf <<'EOF'
-
+        
+mysql_native_password=ON
 innodb_rollback_on_timeout=1
 innodb_lock_wait_timeout=600
 max_connections=350
