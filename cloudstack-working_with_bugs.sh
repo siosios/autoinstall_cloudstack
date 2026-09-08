@@ -155,7 +155,9 @@ perform_rollback() {
         if [[ "$action" == "restore_network_config" ]]; then
             restore_network_config
         else
-            eval "$action" 2>&1 | tee -a "$ROLLBACK_LOG" || warn "Rollback action failed: $action"
+            if ! bash -lc "$action" 2>&1 | tee -a "$ROLLBACK_LOG"; then
+                warn "Rollback action failed: $action"
+            fi
         fi
     done
 
@@ -492,6 +494,11 @@ validate_ip() {
 
     return 0
 }
+validate_optional_ip() {
+    local ip="$1"
+    [[ -z "$ip" ]] && return 0
+    validate_ip "$ip"
+}
 validate_cidr() {
     local cidr="$1"
     if [[ $cidr =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$ ]]; then
@@ -513,6 +520,17 @@ validate_path() {
     local path="$1"
     [[ $path =~ ^/[a-zA-Z0-9/_-]+$ ]]
 }
+mysql_uri_encode() {
+    local value="$1"
+    if command -v python3 >/dev/null 2>&1; then
+        python3 - "$value" <<'PY'
+import sys, urllib.parse
+print(urllib.parse.quote(sys.argv[1], safe=''))
+PY
+    else
+        printf '%s' "$value"
+    fi
+}
 
 # -----------------------------------------------------------------
 # Enhanced input prompts
@@ -532,6 +550,16 @@ read_with_validation() {
             read -rep "$prompt" value
         fi
 
+        if [[ -z "$value" ]]; then
+            if [[ "$is_password" == "true" ]]; then
+                warn "Password cannot be empty. Please try again."
+                continue
+            elif [[ -n "$validator" ]]; then
+                warn "Value cannot be empty. Please try again."
+                continue
+            fi
+        fi
+
         if [[ "$is_password" != "true" && -n "$value" ]]; then
             read -rp "You entered: '$value'. Is this correct? (y/n/edit): " confirm
             case "$confirm" in
@@ -543,14 +571,14 @@ read_with_validation() {
 
         if [[ -n "$validator" ]]; then
             if $validator "$value"; then
-                eval "$var_name='$value'"
+                printf -v "$var_name" '%s' "$value"
                 return 0
             else
                 warn "Invalid input. Please try again."
                 continue
             fi
         else
-            eval "$var_name='$value'"
+            printf -v "$var_name" '%s' "$value"
             return 0
         fi
     done
@@ -594,7 +622,7 @@ get_network_info() {
 
     read_with_validation 'Gateway (e.g. 192.168.1.1): ' validate_ip GATEWAY
     read_with_validation 'DNS1 (e.g. 192.168.1.1): ' validate_ip DNS1
-    read_with_validation 'DNS2 (e.g. 8.8.4.4): ' validate_ip DNS2
+    read_with_validation 'DNS2 (optional, e.g. 8.8.4.4): ' validate_optional_ip DNS2
     read_with_validation 'Network interface (e.g. eno1 or eth0): ' '' CON
 
     if [[ -n "$CON" ]] && ! ip link show "$CON" &>/dev/null; then
@@ -612,7 +640,7 @@ get_network_info() {
     echo "Hostname: $HOSTNAME"
     echo "IP/CIDR: $CIDR"
     echo "Gateway: $GATEWAY"
-    echo "DNS: $DNS1, $DNS2"
+    echo "DNS: $DNS1${DNS2:+, $DNS2}"
     echo "Interface: $CON"
     echo
 
@@ -701,12 +729,16 @@ add_ssh_public_key() {
 safe_write_file() {
     local dest="$1"
     shift
-    local dir
+    local dir tmp
     dir="$(dirname "$dest")"
     mkdir -p "$dir"
-    local tmp
-    tmp="$(mktemp --tmpdir "$(basename "$dest").XXXXXX")"
-    cat >"$tmp" "$@"
+    tmp="$(mktemp "${dir}/$(basename "$dest").XXXXXX")"
+
+    if (( $# > 0 )); then
+        printf '%s\n' "$@" >"$tmp"
+    else
+        cat >"$tmp"
+    fi
     chmod 644 "$tmp" || true
 
     if [[ -f "$dest" && ! -f "${dest}.installer-backup" ]]; then
@@ -716,7 +748,7 @@ safe_write_file() {
         add_rollback_action "rm -f $dest"
     fi
 
-    mv "$tmp" "$dest"
+    mv -f "$tmp" "$dest"
 }
 
 # -----------------------------------------------------------------
@@ -819,9 +851,15 @@ EOF
 
         info "Configuring network bridges..."
         nmcli c delete cloudbr0 >/dev/null 2>&1 || true
-        nmcli c add type bridge ifname cloudbr0 autoconnect yes con-name cloudbr0 \
-            stp on ipv4.addresses "$CIDR" ipv4.method manual ipv4.gateway "$GATEWAY" \
-            ipv4.dns "$DNS1" +ipv4.dns "$DNS2" ipv6.method disabled >/dev/null 2>&1 || true
+        if [[ -n "$DNS2" ]]; then
+            nmcli c add type bridge ifname cloudbr0 autoconnect yes con-name cloudbr0 \
+                stp on ipv4.addresses "$CIDR" ipv4.method manual ipv4.gateway "$GATEWAY" \
+                ipv4.dns "$DNS1" +ipv4.dns "$DNS2" ipv6.method disabled >/dev/null 2>&1 || true
+        else
+            nmcli c add type bridge ifname cloudbr0 autoconnect yes con-name cloudbr0 \
+                stp on ipv4.addresses "$CIDR" ipv4.method manual ipv4.gateway "$GATEWAY" \
+                ipv4.dns "$DNS1" ipv6.method disabled >/dev/null 2>&1 || true
+        fi
 
         nmcli c delete "$CON" >/dev/null 2>&1 || true
         nmcli c add type bridge-slave autoconnect yes con-name "$CON" ifname "$CON" master cloudbr0 >/dev/null 2>&1 || true
@@ -876,9 +914,11 @@ install_management() {
         local deploy_as="$1"
         shift
         local extra_flags=("$@")
+        local encoded_pass
+        encoded_pass="$(mysql_uri_encode "$MYPASS")"
 
         # Build full command
-        local cmd=(cloudstack-setup-databases "cloud:${MYPASS}@localhost" "--deploy-as" "$deploy_as")
+        local cmd=(cloudstack-setup-databases "cloud:${encoded_pass}@localhost" "--deploy-as" "$deploy_as")
         cmd+=("${extra_flags[@]}")
 
         info "Running database setup: ${cmd[*]}"
@@ -1036,10 +1076,10 @@ EOSQL
         then
             info "Password reset executed"
         else
-            warn "ALTER USER failed, trying UPDATE..."
+            warn "ALTER USER failed, retrying with explicit mysql_native_password plugin..."
             mysql -u root <<EOSQL
 FLUSH PRIVILEGES;
-UPDATE mysql.user SET authentication_string=PASSWORD('$MYPASS') WHERE User='root' AND Host='localhost';
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYPASS';
 FLUSH PRIVILEGES;
 EOSQL
         fi
@@ -1085,18 +1125,30 @@ EOSQL
     # -----------------------------------------------------------------
     # Harden SSH for root login (required by CloudStack)
     # -----------------------------------------------------------------
-    if ! grep -q '^PermitRootLogin' /etc/ssh/sshd_config 2>/dev/null; then
-        if [[ ! -f /etc/ssh/sshd_config.installer-backup ]]; then
-            cp /etc/ssh/sshd_config /etc/ssh/sshd_config.installer-backup
-            add_rollback_action "mv /etc/ssh/sshd_config.installer-backup /etc/ssh/sshd_config"
-        fi
-        cat >>/etc/ssh/sshd_config <<'EOF'
-PermitRootLogin yes
-PasswordAuthentication yes
-PermitEmptyPasswords no
-EOF
-        systemctl reload sshd || true
+    if [[ ! -f /etc/ssh/sshd_config.installer-backup ]]; then
+        cp /etc/ssh/sshd_config /etc/ssh/sshd_config.installer-backup
+        add_rollback_action "mv /etc/ssh/sshd_config.installer-backup /etc/ssh/sshd_config"
     fi
+
+    if grep -q '^PermitRootLogin' /etc/ssh/sshd_config 2>/dev/null; then
+        sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+    else
+        printf '%s\n' 'PermitRootLogin yes' >>/etc/ssh/sshd_config
+    fi
+
+    if grep -q '^PasswordAuthentication' /etc/ssh/sshd_config 2>/dev/null; then
+        sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    else
+        printf '%s\n' 'PasswordAuthentication yes' >>/etc/ssh/sshd_config
+    fi
+
+    if grep -q '^PermitEmptyPasswords' /etc/ssh/sshd_config 2>/dev/null; then
+        sed -i 's/^#\?PermitEmptyPasswords.*/PermitEmptyPasswords no/' /etc/ssh/sshd_config
+    else
+        printf '%s\n' 'PermitEmptyPasswords no' >>/etc/ssh/sshd_config
+    fi
+
+    systemctl reload sshd || true
 
     # -----------------------------------------------------------------
     # MySQL tuning (binlog, innodb, etc.)
@@ -1171,23 +1223,20 @@ EOF
     # -----------------------------------------------------------------
     local mycnf="${HOME}/.my.cnf"
     if [[ ! -f "$mycnf" ]]; then
-        cat >"$mycnf" <<EOF
-[client]
-user=root
-password="${MYPASS}"
-EOF
+        printf '%s\n' '[client]' 'user=root' "password=${MYPASS}" >"$mycnf"
         chmod 600 "$mycnf"
-        add_rollback_action "rm -f $mycnf"
+        add_rollback_action "rm -f \"$mycnf\""
     fi
 
     # -----------------------------------------------------------------
     # Bash aliases for quick CloudStack DB access
     # -----------------------------------------------------------------
     if ! grep -q 'cloudstack_mysql' ~/.bashrc 2>/dev/null; then
-        cat >>~/.bashrc <<EOF
-alias cloudstack_mysql_cloud='mysql -u cloud -p"${MYPASS}" cloud'
-alias cloudstack_mysql_root='mysql -u root -p"${MYPASS}" cloud'
-EOF
+        local safe_mysql_pass
+        safe_mysql_pass=$(printf '%q' "$MYPASS")
+        printf '%s\n' \
+            "alias cloudstack_mysql_cloud=\"mysql -u cloud -p${safe_mysql_pass} cloud\"" \
+            "alias cloudstack_mysql_root=\"mysql -u root -p${safe_mysql_pass} cloud\"" >> ~/.bashrc
     fi
 
     # -----------------------------------------------------------------
@@ -1294,13 +1343,14 @@ EOF
     rm -rf /mnt/primary/* /mnt/secondary/* 2>/dev/null || true
 
     if [[ -n "$VERs" && -n "$VER" ]]; then
-        local base="http://download.cloudstack.org/systemvm/4.22"
+        local template_series="${VERs}"
+        local base="http://download.cloudstack.org/systemvm/${template_series}"
         local templates=(
-            "systemvmtemplate-4.22.0-x86_64-hyperv.vhd.zip:hyperv"
-            "systemvmtemplate-4.22.0-x86_64-xen.vhd.bz2:xenserver"
-            "systemvmtemplate-4.22.0-x86_64-vmware.ova:vmware"
-            "systemvmtemplate-4.22.0-x86_64-kvm.qcow2.bz2:kvm"
-            "systemvmtemplate-4.22.0-x86_64-ovm.raw.bz2:ovm3"
+            "systemvmtemplate-${template_series}.0-x86_64-hyperv.vhd.zip:hyperv"
+            "systemvmtemplate-${template_series}.0-x86_64-xen.vhd.bz2:xenserver"
+            "systemvmtemplate-${template_series}.0-x86_64-vmware.ova:vmware"
+            "systemvmtemplate-${template_series}.0-x86_64-kvm.qcow2.bz2:kvm"
+            "systemvmtemplate-${template_series}.0-x86_64-ovm.raw.bz2:ovm3"
         )
         for template_info in "${templates[@]}"; do
             local template="${template_info%%:*}"
@@ -1341,33 +1391,37 @@ EOF
 
     enable_service_with_rollback nfs-server
 
-    local ports=(
-        111/tcp 2049/tcp 32803/tcp 32769/udp 892/tcp 892/udp
-        875/tcp 875/udp 10000/tcp 8080/tcp 662/tcp 8250/tcp
-        8443/tcp 9090/tcp 8080/udp 8250/udp 8443/udp 9090/udp
-        22/tcp 3306/tcp 1798/tcp 16514/tcp 5900-6100/tcp 49152-49216/tcp
-    )
-    local needs_reload=false
-    for p in "${ports[@]}"; do
-        if ! firewall-cmd --query-port="$p" --permanent &>/dev/null; then
-            if firewall-cmd --zone=public --add-port="$p" --permanent; then
-                needs_reload=true
-                info "Added firewall port: $p"
-                add_rollback_action "firewall-cmd --zone=public --remove-port='$p' --permanent"
+    if ! command -v firewall-cmd >/dev/null 2>&1; then
+        warn "firewalld/firewall-cmd not available; skipping firewall port configuration"
+    elif ! firewall-cmd --state >/dev/null 2>&1; then
+        warn "firewalld is installed but not running; skipping firewall port configuration"
+    else
+        local ports=(
+            111/tcp 2049/tcp 32803/tcp 32769/udp 892/tcp 892/udp
+            875/tcp 875/udp 10000/tcp 8080/tcp 662/tcp 8250/tcp
+            8443/tcp 9090/tcp 8080/udp 8250/udp 8443/udp 9090/udp
+            22/tcp 3306/tcp 1798/tcp 16514/tcp 5900-6100/tcp 49152-49216/tcp
+        )
+        local needs_reload=false
+        for p in "${ports[@]}"; do
+            if ! firewall-cmd --query-port="$p" --permanent &>/dev/null; then
+                if firewall-cmd --zone=public --add-port="$p" --permanent; then
+                    needs_reload=true
+                    info "Added firewall port: $p"
+                    add_rollback_action "firewall-cmd --zone=public --remove-port='$p' --permanent"
+                fi
+            else
+                info "Firewall port already open: $p"
             fi
-        else
-            info "Firewall port already open: $p"
-        fi
-    done
+        done
 
-    # *** IMPORTANT FIX ***
-    if [[ "$needs_reload" == true ]]; then
-        firewall-cmd --reload || true
-        info "Firewall rules reloaded"
-        add_rollback_action "firewall-cmd --reload"
+        if [[ "$needs_reload" == true ]]; then
+            firewall-cmd --reload || true
+            info "Firewall rules reloaded"
+            add_rollback_action "firewall-cmd --reload"
+        fi
     fi
 
-    # Enable the NFS‑related SELinux booleans when SELinux is enforcing
     if command -v getenforce >/dev/null && [[ $(getenforce) == Enforcing ]]; then
         setsebool -P nfs_export_all_rw on
         setsebool -P nfs_export_all_ro on
@@ -1547,6 +1601,11 @@ fi
 if [[ "$opt_uninstall" == "true" ]]; then
     uninstall_cloudstack
     exit 0
+fi
+
+if [[ "$opt_db_force_recreate" == "true" && "$opt_db_schema_only" == "true" ]]; then
+    echo "ERROR: --force-recreate and --schema-only cannot be used together." >&2
+    exit 1
 fi
 
 if [[ "$opt_agent" == "true" || "$opt_common" == "true" || "$opt_management" == "true" ]]; then
